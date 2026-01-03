@@ -17,14 +17,16 @@ import { JwtGuard } from '../common/guards/jwt.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { Role } from '@prisma/client';
+import { ApiBearerAuth } from '@nestjs/swagger';
 
 @Controller('products')
-@UseGuards(JwtGuard, RolesGuard)
 export class ProductController {
   constructor(private readonly productService: ProductService) {}
 
   @Post()
   @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  @UseGuards(JwtGuard, RolesGuard)
+  @ApiBearerAuth()
   @HttpCode(HttpStatus.CREATED)
   create(@Body() createProductDto: CreateProductDto) {
     return this.productService.create(createProductDto);
@@ -44,6 +46,8 @@ export class ProductController {
 
   @Patch(':id')
   @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  @UseGuards(JwtGuard, RolesGuard)
+  @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
   update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto) {
     return this.productService.update(+id, updateProductDto);
@@ -51,6 +55,8 @@ export class ProductController {
 
   @Delete(':id')
   @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  @UseGuards(JwtGuard, RolesGuard)
+  @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
   remove(@Param('id') id: string) {
     return this.productService.remove(+id);

@@ -1,12 +1,22 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { JwtModule } from '@nestjs/jwt';
 import { AssetService } from './asset.service';
 import { AssetController } from './asset.controller';
 import { PrismaModule } from '../prisma/prisma.module';
-import { FileUploadService } from '../file-upload/file-upload.service';
+import { FileUploadModule } from '../file-upload/file-upload.module';
+import { SupabaseModule } from '../supabase/supabase.module';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [
+    PrismaModule,
+    FileUploadModule,
+    ConfigModule,
+    SupabaseModule,
+    AuthModule,
+  ],
   controllers: [AssetController],
-  providers: [AssetService, FileUploadService],
+  providers: [AssetService],
 })
 export class AssetModule {}

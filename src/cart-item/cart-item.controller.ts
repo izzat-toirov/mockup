@@ -16,9 +16,9 @@ import { CreateCartItemDto } from './dto/create-cart-item.dto';
 import { UpdateCartItemDto } from './dto/update-cart-item.dto';
 import { JwtGuard } from '../common/guards/jwt.guard';
 import { CartService } from '../cart/cart.service';
+import { ApiBearerAuth } from '@nestjs/swagger';
 
 @Controller('cart-items')
-@UseGuards(JwtGuard)
 export class CartItemController {
   constructor(
     private readonly cartItemService: CartItemService,
@@ -26,6 +26,8 @@ export class CartItemController {
   ) {}
 
   @Post()
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
   @HttpCode(HttpStatus.CREATED)
   async create(@Body() createCartItemDto: CreateCartItemDto, @Request() req) {
     // Get user's cart
@@ -37,18 +39,24 @@ export class CartItemController {
   }
 
   @Get('cart/:cartId')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
   findAll(@Param('cartId') cartId: string) {
     return this.cartItemService.findAll(+cartId);
   }
 
   @Get(':id')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
   findOne(@Param('id') id: string) {
     return this.cartItemService.findOne(+id);
   }
 
   @Patch(':id')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
   update(
     @Param('id') id: string,
@@ -58,12 +66,16 @@ export class CartItemController {
   }
 
   @Delete(':id')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
   remove(@Param('id') id: string) {
     return this.cartItemService.remove(+id);
   }
 
   @Delete('cart/:cartId')
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
   clearCart(@Param('cartId') cartId: string) {
     return this.cartItemService.clearCart(+cartId);

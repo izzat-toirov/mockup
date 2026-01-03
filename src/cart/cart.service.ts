@@ -2,14 +2,21 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCartDto } from './dto/create-cart.dto';
 import { UpdateCartDto } from './dto/update-cart.dto';
+import { OrderService } from '../order/order.service';
 
 @Injectable()
 export class CartService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @Inject(forwardRef(() => OrderService))
+    private orderService: OrderService,
+  ) {}
 
   async create(createCartDto: CreateCartDto) {
     // Check if user already has a cart
@@ -57,6 +64,19 @@ export class CartService {
     }
 
     return cart;
+  }
+
+  /**
+   * Convert the user's cart to an order
+   * @param userId The ID of the user whose cart to convert
+   * @param orderDetails Additional order details
+   * @returns The created order
+   */
+  async convertCartToOrder(
+    userId: number,
+    orderDetails: Omit<any, 'items' | 'userId'>,
+  ) {
+    return this.orderService.createFromCart(userId, orderDetails);
   }
 
   async update(id: number, updateCartDto: UpdateCartDto) {

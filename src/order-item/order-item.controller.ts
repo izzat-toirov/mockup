@@ -18,14 +18,16 @@ import { JwtGuard } from '../common/guards/jwt.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { Role } from '@prisma/client';
+import { ApiBearerAuth } from '@nestjs/swagger';
 
 @Controller('order-items')
-@UseGuards(JwtGuard, RolesGuard)
 export class OrderItemController {
   constructor(private readonly orderItemService: OrderItemService) {}
 
   @Post()
   @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  @UseGuards(JwtGuard, RolesGuard)
+  @ApiBearerAuth()
   @HttpCode(HttpStatus.CREATED)
   create(@Body() createOrderItemDto: CreateOrderItemDto) {
     return this.orderItemService.create(createOrderItemDto);
@@ -33,6 +35,8 @@ export class OrderItemController {
 
   @Get()
   @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  @UseGuards(JwtGuard, RolesGuard)
+  @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
   findAll(@Query('orderId') orderId?: string) {
     return this.orderItemService.findAll(orderId ? +orderId : undefined);
@@ -40,6 +44,8 @@ export class OrderItemController {
 
   @Get(':id')
   @Roles(Role.USER, Role.ADMIN, Role.SUPER_ADMIN)
+  @UseGuards(JwtGuard, RolesGuard)
+  @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
   findOne(@Param('id') id: string) {
     return this.orderItemService.findOne(+id);
@@ -47,6 +53,8 @@ export class OrderItemController {
 
   @Patch(':id')
   @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  @UseGuards(JwtGuard, RolesGuard)
+  @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
   update(
     @Param('id') id: string,
@@ -57,6 +65,8 @@ export class OrderItemController {
 
   @Delete(':id')
   @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  @UseGuards(JwtGuard, RolesGuard)
+  @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
   remove(@Param('id') id: string) {
     return this.orderItemService.remove(+id);

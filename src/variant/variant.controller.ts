@@ -17,14 +17,16 @@ import { JwtGuard } from '../common/guards/jwt.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { Role } from '@prisma/client';
+import { ApiBearerAuth } from '@nestjs/swagger';
 
 @Controller('variants')
-@UseGuards(JwtGuard, RolesGuard)
 export class VariantController {
   constructor(private readonly variantService: VariantService) {}
 
   @Post()
   @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  @UseGuards(JwtGuard, RolesGuard)
+  @ApiBearerAuth()
   @HttpCode(HttpStatus.CREATED)
   create(@Body() createVariantDto: CreateVariantDto) {
     return this.variantService.create(createVariantDto);
@@ -44,6 +46,8 @@ export class VariantController {
 
   @Patch(':id')
   @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  @UseGuards(JwtGuard, RolesGuard)
+  @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
   update(@Param('id') id: string, @Body() updateVariantDto: UpdateVariantDto) {
     return this.variantService.update(+id, updateVariantDto);
@@ -51,6 +55,8 @@ export class VariantController {
 
   @Delete(':id')
   @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  @UseGuards(JwtGuard, RolesGuard)
+  @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
   remove(@Param('id') id: string) {
     return this.variantService.remove(+id);

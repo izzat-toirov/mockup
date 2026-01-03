@@ -1,5 +1,12 @@
-import { CanActivate, ExecutionContext, Injectable, UnauthorizedException, ForbiddenException } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  Injectable,
+  UnauthorizedException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
 import type { Request } from 'express';
 
@@ -7,6 +14,7 @@ import type { Request } from 'express';
 export class JwtGuard implements CanActivate {
   constructor(
     private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
     private readonly prisma: PrismaService, // ✅ DB dan tekshirish uchun
   ) {}
 
@@ -24,9 +32,13 @@ export class JwtGuard implements CanActivate {
     }
 
     let payload: any;
+    const accessSecret = this.configService.get<string>('ACCESS_TOKEN_KEY');
+    if (!accessSecret) {
+      throw new Error('ACCESS_TOKEN_KEY environment variable is not set');
+    }
     try {
       payload = await this.jwtService.verify(token, {
-        secret: process.env.ACCESS_TOKEN_KEY,
+        secret: accessSecret,
       });
     } catch (error) {
       throw new UnauthorizedException('Token noto‘g‘ri yoki muddati tugagan');

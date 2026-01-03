@@ -17,14 +17,16 @@ import { JwtGuard } from '../common/guards/jwt.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { Role } from '@prisma/client';
+import { ApiBearerAuth } from '@nestjs/swagger';
 
 @Controller('users')
-@UseGuards(JwtGuard, RolesGuard)
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Post()
   @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  @UseGuards(JwtGuard, RolesGuard)
+  @ApiBearerAuth()
   @HttpCode(HttpStatus.CREATED)
   create(@Body() createUserDto: CreateUserDto) {
     return this.userService.create(createUserDto);
@@ -32,6 +34,8 @@ export class UserController {
 
   @Get()
   @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  @UseGuards(JwtGuard, RolesGuard)
+  @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
   findAll() {
     return this.userService.findAll();
@@ -39,6 +43,8 @@ export class UserController {
 
   @Get(':id')
   @Roles(Role.USER, Role.ADMIN, Role.SUPER_ADMIN)
+  @UseGuards(JwtGuard, RolesGuard)
+  @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
   findOne(@Param('id') id: string) {
     return this.userService.findOne(+id);
@@ -46,6 +52,8 @@ export class UserController {
 
   @Patch(':id')
   @Roles(Role.USER, Role.ADMIN, Role.SUPER_ADMIN)
+  @UseGuards(JwtGuard, RolesGuard)
+  @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
   update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
     return this.userService.update(+id, updateUserDto);
@@ -53,6 +61,8 @@ export class UserController {
 
   @Delete(':id')
   @Roles(Role.ADMIN, Role.SUPER_ADMIN)
+  @UseGuards(JwtGuard, RolesGuard)
+  @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
   remove(@Param('id') id: string) {
     return this.userService.remove(+id);

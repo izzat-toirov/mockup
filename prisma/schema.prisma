@@ -9,7 +9,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
 }
 
 // --- 1. FOYDALANUVCHILAR ---
@@ -106,7 +106,7 @@ model Order {
   user   User? @relation(fields: [userId], references: [id])
 
   customerName  String
-  customerPhone String
+  customerPhone String @db.VarChar(20)
   region        String
   address       String
 
@@ -117,6 +117,9 @@ model Order {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([customerPhone])
+  @@index([status])
 }
 
 enum OrderStatus {
@@ -149,6 +152,8 @@ model OrderItem {
   backDesign      Json?
   backPreviewUrl  String?
   finalPrintFile  String?
+
+  @@index([orderId])
 }
 
 // --- 6. SAVATCHA JADVALI ---

@@ -5,12 +5,15 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { RegisterAuthDto } from './dto/register-auth.dto';
 import { LoginAuthDto } from './dto/login-auth.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { SendOtpDto } from './dto/send-otp.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { MailService } from '../mail/mail.service';
 import { User } from '@prisma/client';
 
@@ -19,10 +22,19 @@ export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwt: JwtService,
+    private configService: ConfigService,
     private mailService: MailService,
   ) {}
 
   async register(dto: RegisterAuthDto) {
+    // Validate that both email and phone are provided (as required by DB schema)
+    if (!dto.email) {
+      throw new BadRequestException('Email is required');
+    }
+    if (!dto.phone) {
+      throw new BadRequestException('Phone is required');
+    }
+
     // Check if user already exists
     const existingUser = await this.prisma.user.findFirst({
       where: {
@@ -156,7 +168,7 @@ export class AuthService {
       throw new BadRequestException('Invalid OTP code');
     }
 
-    if (user.otpExpires < new Date()) {
+    if (!user.otpExpires || user.otpExpires < new Date()) {
       throw new BadRequestException('OTP code has expired');
     }
 
@@ -174,6 +186,68 @@ export class AuthService {
     const { password, otpCode, otpExpires, hashedRefreshToken, ...result } =
       updatedUser;
     return result;
+  }
+
+  async forgotPassword(dto: ForgotPasswordDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    });
+
+    if (!user) {
+      throw new BadRequestException('User with this email does not exist');
+    }
+
+    // Generate OTP for password reset
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    // Update user with new OTP for password reset
+    await this.prisma.user.update({
+      where: { email: dto.email },
+      data: {
+        otpCode,
+        otpExpires,
+      },
+    });
+
+    // Send OTP via email for password reset
+    await this.mailService.sendPasswordResetOtp(dto.email, otpCode);
+
+    return { message: 'Password reset OTP sent successfully' };
+  }
+
+  async resetPassword(dto: ResetPasswordDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    });
+
+    if (!user) {
+      throw new BadRequestException('User with this email does not exist');
+    }
+
+    // Check if OTP matches and is not expired
+    if (user.otpCode !== dto.otp) {
+      throw new BadRequestException('Invalid OTP code');
+    }
+
+    if (!user.otpExpires || user.otpExpires < new Date()) {
+      throw new BadRequestException('OTP code has expired');
+    }
+
+    // Hash the new password
+    const hashedNewPassword = await bcrypt.hash(dto.newPassword, 10);
+
+    // Update user's password and clear OTP
+    await this.prisma.user.update({
+      where: { email: dto.email },
+      data: {
+        password: hashedNewPassword,
+        otpCode: null,
+        otpExpires: null,
+      },
+    });
+
+    return { message: 'Password reset successfully' };
   }
 
   async refreshTokens(userId: number, refreshToken: string) {
@@ -213,14 +287,29 @@ export class AuthService {
       email,
     };
 
+    const jwtSecret = this.configService.get<string>('JWT_SECRET', {
+      infer: true,
+    });
+    if (!jwtSecret) {
+      throw new Error('JWT_SECRET environment variable is not set');
+    }
+
+    const refreshTokenSecret = this.configService.get<string>(
+      'JWT_REFRESH_SECRET',
+      { infer: true },
+    );
+    if (!refreshTokenSecret) {
+      throw new Error('JWT_REFRESH_SECRET environment variable is not set');
+    }
+
     const accessToken = this.jwt.sign(payload, {
       expiresIn: '15m',
-      secret: process.env.JWT_SECRET || 'default_secret_key',
+      secret: jwtSecret,
     });
 
     const refreshToken = this.jwt.sign(payload, {
       expiresIn: '7d',
-      secret: process.env.JWT_REFRESH_SECRET || 'default_refresh_secret_key',
+      secret: refreshTokenSecret,
     });
 
     return {

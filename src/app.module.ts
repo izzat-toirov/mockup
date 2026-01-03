@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
@@ -12,9 +14,19 @@ import { CartItemModule } from './cart-item/cart-item.module';
 import { FileUploadModule } from './file-upload/file-upload.module';
 import { PrintFileModule } from './print-file/print-file.module';
 import { NotificationModule } from './notification/notification.module';
+import { SupabaseModule } from './supabase/supabase.module';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000, // Time to live in milliseconds
+        limit: 10, // Maximum number of requests within the TTL
+      },
+    ]),
     PrismaModule,
     AuthModule,
     UserModule,
@@ -28,6 +40,7 @@ import { NotificationModule } from './notification/notification.module';
     FileUploadModule,
     PrintFileModule,
     NotificationModule,
+    SupabaseModule,
   ],
 })
 export class AppModule {}

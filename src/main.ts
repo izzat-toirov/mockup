@@ -4,11 +4,26 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import helmet from 'helmet';
+import { ValidationPipe } from '@nestjs/common';
 
 async function start() {
   try {
     const PORT = process.env.PORT ?? 3030;
     const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+    // Security middlewares
+    app.use(helmet());
+
+    // Global validation pipe
+    app.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+      }),
+    );
+
     app.setGlobalPrefix('api');
 
     // Apply global exception filter
@@ -21,9 +36,18 @@ async function start() {
 
     const config = new DocumentBuilder()
       .setTitle('Bosma.uz - Print-on-Demand Platform')
-      .setDescription('RESTful API for Bosma.uz Print-on-Demand platform')
+      .setDescription(
+        'RESTful API for Bosma.uz Print-on-Demand platform with design customization, order management, and admin dashboard',
+      )
       .setVersion('1.0')
-      .addTag('Print-on-Demand, Design Upload, Custom Printing, E-commerce')
+      .addTag('auth', 'Authentication endpoints')
+      .addTag('users', 'User management')
+      .addTag('products', 'Product management')
+      .addTag('variants', 'Product variant management')
+      .addTag('orders', 'Order management')
+      .addTag('carts', 'Shopping cart functionality')
+      .addTag('file-upload', 'File upload with image processing')
+      .addTag('admin', 'Admin-specific endpoints')
       .addBearerAuth()
       .build();
 

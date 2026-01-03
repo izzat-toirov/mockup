@@ -6,13 +6,13 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateAssetDto } from './dto/create-asset.dto';
 import { UpdateAssetDto } from './dto/update-asset.dto';
-import { FileUploadService } from '../file-upload/file-upload.service';
+import { SupabaseService } from '../supabase/supabase.service';
 
 @Injectable()
 export class AssetService {
   constructor(
     private prisma: PrismaService,
-    private fileUploadService: FileUploadService,
+    private supabaseService: SupabaseService,
   ) {}
 
   async create(createAssetDto: CreateAssetDto) {
@@ -26,17 +26,28 @@ export class AssetService {
   async uploadFile(file: Express.Multer.File, userId: number) {
     // Validate image file type
     const allowedMimes = ['image/jpeg', 'image/jpg', 'image/png'];
-    const fileUrl = await this.fileUploadService.uploadFile(file, allowedMimes);
+    if (!allowedMimes.includes(file.mimetype)) {
+      throw new BadRequestException(
+        `File type ${file.mimetype} is not allowed. Allowed types: ${allowedMimes.join(', ')}`,
+      );
+    }
 
-    // Create asset record
-    const asset = await this.prisma.asset.create({
-      data: {
-        url: fileUrl,
-        userId: userId,
-      },
-    });
+    try {
+      // Upload file to Supabase
+      const fileUrl = await this.supabaseService.uploadFile(file, 'assets');
 
-    return asset;
+      // Create asset record
+      const asset = await this.prisma.asset.create({
+        data: {
+          url: fileUrl,
+          userId: userId,
+        },
+      });
+
+      return asset;
+    } catch (error) {
+      throw new BadRequestException(`File upload failed: ${error.message}`);
+    }
   }
 
   async findAll() {
@@ -100,8 +111,13 @@ export class AssetService {
       throw new NotFoundException(`Asset with ID ${id} not found`);
     }
 
-    // Delete file from storage
-    await this.fileUploadService.deleteFile(asset.url);
+    // Delete file from Supabase storage
+    try {
+      await this.supabaseService.deleteFile(asset.url);
+    } catch (error) {
+      console.error('Error deleting file from Supabase:', error.message);
+      // Continue with asset deletion even if file deletion fails
+    }
 
     // Delete asset record
     await this.prisma.asset.delete({
